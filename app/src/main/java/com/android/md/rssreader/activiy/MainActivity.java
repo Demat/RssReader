@@ -29,13 +29,13 @@ public class MainActivity extends AppCompatActivity {
         String dateS = "2014-10-07 19:36";
         Date date = dateFormat.parse(dateS);
 
-        rssItemDao.create(new RssItem("Temat", "Treść", date));
+        rssItemDao.create(new RssItem("Temat", "Treść", "http://wiadomosci.wp.pl/kat,1342,title,Kim-jest-Wladyslaw-Kosiniak-Kamysz-nowy-prezes-PSL,wid,17959153,wiadomosc.html",  date));
 
         List<RssItem> items = rssItemDao.queryForAll();
 
         Log.d("Demo", items.toString());
         // TEST END
-        
+
         OpenHelperManager.releaseHelper();
         /*DELETE ALL
         List<RssItem> items = rssItemDao.queryForAll();
