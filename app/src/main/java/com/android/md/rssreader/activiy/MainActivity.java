@@ -1,55 +1,131 @@
 package com.android.md.rssreader.activiy;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-
+import android.view.View;
+import android.widget.ListView;
+import android.widget.Toast;
+import com.android.md.rssreader.ItemAdapter;
+import com.android.md.rssreader.ListListener;
 import com.android.md.rssreader.R;
 import com.android.md.rssreader.database.Helper;
 import com.android.md.rssreader.model.RssItem;
+import com.android.md.rssreader.sax.RssReader;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
 import com.j256.ormlite.dao.RuntimeExceptionDao;
-
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    FloatingActionButton refresh;
+    ListView listViewItems;
+
     Helper dbHelper;
+    RuntimeExceptionDao<RssItem, Integer> rssItemDao;
 
-    private void addRssItem() throws ParseException {
-        dbHelper = OpenHelperManager.getHelper(this, Helper.class);
-        RuntimeExceptionDao<RssItem, Integer> rssItemDao = dbHelper.getRssItemRunTimeDao();
+    String url = "http://wiadomosci.wp.pl/ver,rss,rss.xml";
+    RssReader rssReader;
+    List<RssItem> rssItemList;
 
-        //TEST START
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        String dateS = "2014-10-07 19:36";
-        Date date = dateFormat.parse(dateS);
-
-        rssItemDao.create(new RssItem("Temat", "Treść", "http://wiadomosci.wp.pl/kat,1342,title,Kim-jest-Wladyslaw-Kosiniak-Kamysz-nowy-prezes-PSL,wid,17959153,wiadomosc.html",  date));
-
-        List<RssItem> items = rssItemDao.queryForAll();
-
-        Log.d("Demo", items.toString());
-        // TEST END
-
-        OpenHelperManager.releaseHelper();
-        /*DELETE ALL
-        List<RssItem> items = rssItemDao.queryForAll();
-        rssItemDao.delete(items);
-        */
-    }
+    AsyncTaskGetRssItems task = new AsyncTaskGetRssItems();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        try {
-            addRssItem();
-        } catch(ParseException pex) {}
+        listViewItems = (ListView) findViewById(R.id.listView);
+        refresh = (FloatingActionButton) findViewById(R.id.roundButton);
+
+        dbHelper = OpenHelperManager.getHelper(this, Helper.class);
+        rssItemDao = dbHelper.getRssItemRunTimeDao();
+
+        if(isOnline()){
+            clearList();
+            task.execute(url);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        refreshListButton();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        OpenHelperManager.releaseHelper();
+    }
+
+    public void clearList() {
+        List<RssItem> items = rssItemDao.queryForAll();
+        rssItemDao.delete(items);
+    }
+
+    public boolean isOnline() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
+    }
+
+    public void insertItems(ArrayList<RssItem> rssItemList) {
+        for (RssItem item : rssItemList) {
+            rssItemDao.create(new RssItem(item.getTitle(), item.getDescription(),
+                    item.getLink(), item.getPubDate()));
+        }
+    }
+
+    public void populateListView() {
+        ArrayList<RssItem> rssItems = (ArrayList) rssItemDao.queryForAll();
+        final ItemAdapter rssList = new ItemAdapter(MainActivity.this, rssItems, dbHelper);
+        listViewItems.setAdapter(rssList);
+        listViewItems.setOnItemClickListener(new ListListener(rssItems, MainActivity.this));
+    }
+
+    private void refreshListButton() {
+        refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isOnline()) {
+                    clearList();
+                    AsyncTaskGetRssItems task = new AsyncTaskGetRssItems();
+                    task.execute(url);
+                } else {
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.connectionToast),
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+    private class AsyncTaskGetRssItems extends AsyncTask<String, Void, List<RssItem>> {
+        @Override
+        protected List<RssItem> doInBackground(String... urls) {
+            try {
+                rssReader = new RssReader(urls[0]);
+                rssItemList = rssReader.getItems();
+                return rssItemList;
+
+            } catch (Exception e) {
+                Log.e("ITCRssReader", e.getMessage());
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(List<RssItem> result) {
+            insertItems((ArrayList)result);
+            populateListView();
+        }
     }
 }

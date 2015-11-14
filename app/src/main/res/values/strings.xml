@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">RssReader</string>
+    <string name="connectionToast">Check you\'r internet connection</string>
 </resources>
