@@ -1,6 +1,7 @@
 package com.android.md.rssreader.sax;
 
 import com.android.md.rssreader.model.RssItem;
+import com.android.md.rssreader.model.XmlItem;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -18,7 +19,7 @@ public class RssParseHandler extends DefaultHandler {
     RssItem item = null;
     private ArrayList<RssItem> rssItems = new ArrayList<RssItem>();
 
-    DateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss ZZZ");
+    DateFormat dateFormat = new SimpleDateFormat(XmlItem.xmlDateFormat);
 
     public ArrayList<RssItem> getItemsList() {
         return rssItems;
@@ -28,7 +29,7 @@ public class RssParseHandler extends DefaultHandler {
     public void startElement(String uri, String localName, String qName, Attributes attributes)
             throws SAXException {
         currentValue = "";
-        if (localName.equals("item")) {
+        if (localName.equals(XmlItem.item)) {
             currentElement = true;
             item = new RssItem();
         }
@@ -37,19 +38,19 @@ public class RssParseHandler extends DefaultHandler {
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
         if (currentElement == true) {
-            if (localName.equalsIgnoreCase("title")) {
+            if (localName.equalsIgnoreCase(XmlItem.title)) {
                 item.setTitle(currentValue.trim());
-            } else if (localName.equalsIgnoreCase("description")) {
+            } else if (localName.equalsIgnoreCase(XmlItem.description)) {
                 item.setDescription(currentValue.trim());
-            } else if (localName.equalsIgnoreCase("link")) {
+            } else if (localName.equalsIgnoreCase(XmlItem.link)) {
                 item.setLink(currentValue.trim());
-            } else if (localName.equalsIgnoreCase("pubDate"))
+            } else if (localName.equalsIgnoreCase(XmlItem.pubDate))
                 try {
                     item.setPubDate(dateFormat.parse(currentValue.trim()));
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
-            else if (localName.equalsIgnoreCase("item")) {
+            else if (localName.equalsIgnoreCase(XmlItem.item)) {
                 currentElement = false;
                 rssItems.add(item);
             }
