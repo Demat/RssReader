@@ -50,6 +50,11 @@ public class MainActivity extends AppCompatActivity {
         if(isOnline()){
             clearList();
             task.execute(url);
+        } else{
+            clearList();
+            Toast.makeText(getApplicationContext(),
+                   getString(R.string.connectionToast),
+                   Toast.LENGTH_LONG).show();
         }
     }
 
