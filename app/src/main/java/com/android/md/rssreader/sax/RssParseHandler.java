@@ -11,6 +11,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class RssParseHandler extends DefaultHandler {
 
@@ -19,7 +20,7 @@ public class RssParseHandler extends DefaultHandler {
     RssItem item = null;
     private ArrayList<RssItem> rssItems = new ArrayList<RssItem>();
 
-    DateFormat dateFormat = new SimpleDateFormat(XmlItem.xmlDateFormat);
+    DateFormat dateFormat = new SimpleDateFormat(XmlItem.xmlDateFormat, Locale.ENGLISH);
 
     public ArrayList<RssItem> getItemsList() {
         return rssItems;
